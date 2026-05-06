@@ -1,0 +1,30 @@
+{
+  // 插件唯一标识符，推荐使用反向域名格式避免冲突
+  "id": "com.example.classworkswidget",
+
+  // 在阑山桌面插件管理界面显示的名称
+  "name": "Classworks 作业组件",
+
+  // 插件版本号，请遵循语义化版本
+  "version": "0.1.0",
+
+  // 插件简要描述
+  "description": "在阑山桌面上显示来自 Classworks 的作业列表，并支持通过厚浪云账号登录。",
+
+  // 插件作者，可替换为个人或组织名
+  "author": "YourName",
+
+  // 与宿主匹配的插件 API 版本，SDK v5 对应 5.0.0
+  "apiVersion": "5.0.0",
+
+  // 插件入口程序集，编译生成的 DLL 文件名
+  "entranceAssembly": "ClassworksPlugin.dll",
+
+  // 插件与宿主共享的契约列表，目前无需依赖其他契约
+  "sharedContracts": [],
+
+  // 运行时配置，此处使用 in-proc 模式在宿主进程内运行
+  "runtime": {
+    "mode": "in-proc"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  // Unique identifier for the plugin.  Use a reverse domain name format to
+  // minimise the chance of collisions.  This ID is referenced by the host to
+  // locate and load the plugin assembly.  Do not change this value after
+  // publishing your plugin.
+  "id": "com.example.classworkswidget",
+
+  // Human‑readable name that will appear in the plugin manager UI.  Keep this
+  // concise but descriptive.
+  "name": "Classworks 作业组件",
+
+  // Semantic version number of your plugin.  Bump this number when you
+  // introduce new features or fixes.
+  "version": "0.1.0",
+
+  // Description shown in the plugin manager.  Briefly explain what your
+  // plugin does and highlight its key features.
+  "description": "在阑山桌面上显示来自 Classworks 的作业列表，并支持通过厚浪云账号登录。",
+
+  // Author information.  Replace with your own name or organisation.
+  "author": "YourName",
+
+  // The fully qualified type name (including namespace) of your plugin entry
+  // class.  The host instantiates this type at runtime.  Make sure the
+  // namespace and class name match the definitions in your code.
+  "entryPoint": "ClassworksPlugin.ClassworksPlugin",
+  "hasSettingsPage": true,
+
+  // Minimum required version of the host plugin API.  Setting this helps the
+  // host ensure compatibility.
+  "apiVersion": "5.0.0"
+}
