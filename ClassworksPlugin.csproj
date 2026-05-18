@@ -1,50 +1,45 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!--
-    This project defines a simple LanMountainDesktop plugin.  It targets the
-    .NET 10.0 runtime used by the desktop host and references the
-    LanMountainDesktop.PluginSdk package.  You may need to restore the
-    LanMountainDesktop.PluginSdk package from a local feed when building the
-    plugin in the LanMountainDesktop solution.
-  -->
   <PropertyGroup>
-    <!-- Target framework should match the host runtime.  At the time of
-         writing LanMountainDesktop uses .NET 10.  Adjust this value if the
-         host updates its runtime. -->
     <TargetFramework>net10.0</TargetFramework>
-    <!-- Mark the assembly as a plugin so that it is not trimmed or optimised
-         away during publishing. -->
-    <AssemblyName>ClassworksPlugin</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <RootNamespace>ClassworksPlugin</RootNamespace>
+    <AssemblyName>ClassworksPlugin</AssemblyName>
+    <Version>0.1.0</Version>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <OutputPath>bin\$(Configuration)\$(TargetFramework)\content\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <LanMountainPluginEnablePackaging>true</LanMountainPluginEnablePackaging>
+    <LanMountainPluginBuildOutputDirectory>$(OutputPath)</LanMountainPluginBuildOutputDirectory>
+    <LanMountainPluginPackageVersion>$(Version)</LanMountainPluginPackageVersion>
+    <LanMountainPluginPackageOutputDirectory>$(MSBuildThisFileDirectory)</LanMountainPluginPackageOutputDirectory>
+    <LanMountainPluginPackageFileName>Classworks4LanDesktop.$(LanMountainPluginPackageVersion)$(LanMountainPluginPackageExtension)</LanMountainPluginPackageFileName>
+    <LanMountainPluginPackagePath>$(LanMountainPluginPackageOutputDirectory)$(LanMountainPluginPackageFileName)</LanMountainPluginPackagePath>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Reference the LanMountainDesktop plugin SDK.  This package exposes
-         the IPlugin interface along with base classes such as WidgetPluginBase
-         that simplify the implementation of new components.  When building
-         against the host solution the package will be resolved from the
-         solution’s local source.  -->
-    <PackageReference Include="LanMountainDesktop.PluginSdk" Version="5.0.0" />
-    <!-- The Avalonia package is required to build XAML based views.  The
-         version here matches the one used by LanMountainDesktop.  -->
-    <PackageReference Include="Avalonia" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Controls" Version="12.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <!-- FluentAvalonia provides modern Fluent UI styled controls for Avalonia.
-         Reference it to build a settings page that matches the host's look and feel. -->
-    <PackageReference Include="FluentAvalonia" Version="1.5.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Embed the plugin manifest so it can be loaded by the host at
-         runtime.  The manifest defines metadata such as ID, name, version
-         and entry point class.  -->
-    <None Include="plugin.json" Pack="true" PackagePath="/" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Mark XAML files for Avalonia compilation. -->
-    <AvaloniaXaml Include="Views\*.axaml" />
+    <PackageReference Include="Avalonia" Version="12.0.1" ExcludeAssets="runtime" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.0.1" ExcludeAssets="runtime" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.1" ExcludeAssets="runtime" />
+    <PackageReference Include="FluentIcons.Avalonia" Version="2.1.325" ExcludeAssets="runtime" />
+    <PackageReference Include="FluentIcons.Avalonia.Fluent" Version="2.0.325" ExcludeAssets="runtime" />
+    <PackageReference Include="LanMountainDesktop.PluginSdk" Version="5.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.3-preview.1.1" ExcludeAssets="all" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="3.119.3-preview.1.1" ExcludeAssets="all" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="3.119.3-preview.1.1" ExcludeAssets="all" />
+    <PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" Version="3.119.3-preview.1.1" ExcludeAssets="all" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.3" ExcludeAssets="all" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.macOS" Version="8.3.1.3" ExcludeAssets="all" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Win32" Version="8.3.1.3" ExcludeAssets="all" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.WebAssembly" Version="8.3.1.3" ExcludeAssets="all" />
+    <PackageReference Include="Avalonia.Angle.Windows.Natives" Version="2.1.25547.20250602" ExcludeAssets="all" />
+    <PackageReference Include="Avalonia.Native" Version="12.0.1" ExcludeAssets="all" />
+    <None Include="plugin.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Localization\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

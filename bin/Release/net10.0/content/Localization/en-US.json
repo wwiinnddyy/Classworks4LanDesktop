@@ -1,0 +1,6 @@
+{
+  "plugin.description": "Display and sync Classworks homework on LanMountain Desktop.",
+  "settings.page_title": "Classworks Settings",
+  "widget.display_name": "Classworks Homework",
+  "widget.category": "Classworks"
+}

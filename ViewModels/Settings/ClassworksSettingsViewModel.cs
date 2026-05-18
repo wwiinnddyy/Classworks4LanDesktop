@@ -1,147 +1,144 @@
-using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using ClassworksPlugin.Settings;
+using ClassworksPlugin.Services;
+using LanMountainDesktop.PluginSdk;
 
-namespace ClassworksPlugin.ViewModels.Settings
+namespace ClassworksPlugin.ViewModels.Settings;
+
+public sealed class ClassworksSettingsViewModel : INotifyPropertyChanged
 {
-    /// <summary>
-    /// View model for the plugin settings page.  Allows the user to
-    /// configure the Classworks KV connection using either direct input or
-    /// browser login.  Changes are persisted via <see cref="PluginConfig"/>.
-    /// </summary>
-    public sealed class ClassworksSettingsViewModel : INotifyPropertyChanged
+    private readonly ClassworksSettingsService _settingsService;
+    private readonly PluginLocalizer _localizer;
+    private int _loginMethodIndex;
+    private string _namespaceId = string.Empty;
+    private string _password = string.Empty;
+    private string _appId = string.Empty;
+    private string _kvBaseUrl = ClassworksService.DefaultKvBaseUrl;
+
+    public ClassworksSettingsViewModel(
+        ClassworksSettingsService settingsService,
+        PluginLocalizer localizer)
     {
-        private int _loginMethodIndex;
-        private string _namespaceId = string.Empty;
-        private string _password = string.Empty;
-        private string _appId = string.Empty;
+        _settingsService = settingsService;
+        _localizer = localizer;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ClassworksSettingsViewModel"/> class.
-        /// Loads existing configuration from disk.
-        /// </summary>
-        public ClassworksSettingsViewModel()
+        var settings = _settingsService.GetSettings();
+        _namespaceId = settings.NamespaceId;
+        _password = settings.Password;
+        _appId = settings.AppId;
+        _kvBaseUrl = settings.KvBaseUrl;
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public int LoginMethodIndex
+    {
+        get => _loginMethodIndex;
+        set
         {
-            var cfg = PluginConfig.Load();
-            _namespaceId = cfg.NamespaceId;
-            _password = cfg.Password;
-            _appId = cfg.AppId;
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        /// <summary>
-        /// 选择的登录方式索引：0 表示直接填写，1 表示浏览器登录。
-        /// </summary>
-        public int LoginMethodIndex
-        {
-            get => _loginMethodIndex;
-            set
+            if (_loginMethodIndex != value)
             {
-                if (_loginMethodIndex != value)
-                {
-                    _loginMethodIndex = value;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(IsDirectInputMode));
-                    OnPropertyChanged(nameof(IsBrowserMode));
-                }
+                _loginMethodIndex = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsDirectInputMode));
+                OnPropertyChanged(nameof(IsBrowserMode));
             }
         }
+    }
 
-        /// <summary>
-        /// 是否处于直接输入模式。
-        /// </summary>
-        public bool IsDirectInputMode => LoginMethodIndex == 0;
+    public bool IsDirectInputMode => LoginMethodIndex == 0;
 
-        /// <summary>
-        /// 是否处于浏览器登录模式。
-        /// </summary>
-        public bool IsBrowserMode => LoginMethodIndex == 1;
+    public bool IsBrowserMode => LoginMethodIndex == 1;
 
-        public string NamespaceId
+    public string NamespaceId
+    {
+        get => _namespaceId;
+        set
         {
-            get => _namespaceId;
-            set
+            if (_namespaceId != value)
             {
-                if (_namespaceId != value)
-                {
-                    _namespaceId = value;
-                    OnPropertyChanged();
-                }
+                _namespaceId = value;
+                OnPropertyChanged();
             }
         }
+    }
 
-        public string Password
+    public string Password
+    {
+        get => _password;
+        set
         {
-            get => _password;
-            set
+            if (_password != value)
             {
-                if (_password != value)
-                {
-                    _password = value;
-                    OnPropertyChanged();
-                }
+                _password = value;
+                OnPropertyChanged();
             }
         }
+    }
 
-        public string AppId
+    public string AppId
+    {
+        get => _appId;
+        set
         {
-            get => _appId;
-            set
+            if (_appId != value)
             {
-                if (_appId != value)
-                {
-                    _appId = value;
-                    OnPropertyChanged();
-                }
+                _appId = value;
+                OnPropertyChanged();
             }
         }
+    }
 
-        /// <summary>
-        /// Saves settings to disk.  Widgets will reload configuration on next
-        /// refresh.
-        /// </summary>
-        public Task SaveSettingsAsync()
+    public string KvBaseUrl
+    {
+        get => _kvBaseUrl;
+        set
         {
-            var cfg = new PluginConfig
+            if (_kvBaseUrl != value)
             {
-                NamespaceId = NamespaceId ?? string.Empty,
-                Password = Password ?? string.Empty,
-                AppId = AppId ?? string.Empty
-            };
-            cfg.Save();
-            return Task.CompletedTask;
+                _kvBaseUrl = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string PageTitle => T("settings.page_title", "Classworks 设置");
+
+    public Task SaveSettingsAsync()
+    {
+        _settingsService.UpdateSettings(settings =>
+        {
+            settings.NamespaceId = NamespaceId ?? string.Empty;
+            settings.Password = Password ?? string.Empty;
+            settings.AppId = AppId ?? string.Empty;
+            settings.KvBaseUrl = string.IsNullOrWhiteSpace(KvBaseUrl)
+                ? ClassworksService.DefaultKvBaseUrl
+                : KvBaseUrl.Trim();
+        });
+        return Task.CompletedTask;
+    }
+
+    public Task BeginBrowserLoginAsync()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("https://zerocat.dev/oauth")
+            {
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
         }
 
-        /// <summary>
-        /// Initiates a browser-based login.  This simply opens the default
-        /// browser to the ZeroCat OAuth page; the user completes login and
-        /// authorises the application.  After completion they should copy
-        /// the returned token into the plugin settings.  Real implementation
-        /// would involve a local redirect URI and a callback listener.
-        /// </summary>
-        public Task BeginBrowserLoginAsync()
-        {
-            try
-            {
-                // Launch default browser to the OAuth page.  Replace with the
-                // correct URL for ZeroCat OAuth once available.
-                var loginUrl = "https://zerocat.dev/oauth";
-                Process.Start(new ProcessStartInfo(loginUrl) { UseShellExecute = true });
-            }
-            catch
-            {
-                // ignore
-            }
-            return Task.CompletedTask;
-        }
+        return Task.CompletedTask;
+    }
+
+    private string T(string key, string fallback) => _localizer.GetString(key, fallback);
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

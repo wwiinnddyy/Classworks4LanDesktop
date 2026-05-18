@@ -1,42 +1,33 @@
-using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using ClassworksPlugin.ViewModels.Settings;
+using LanMountainDesktop.PluginSdk;
 
-namespace ClassworksPlugin.Views.Settings
+namespace ClassworksPlugin.Views.Settings;
+
+public partial class ClassworksSettingsPage : SettingsPageBase
 {
-    /// <summary>
-    /// Code behind for <see cref="ClassworksSettingsPage"/>.  Handles button
-    /// clicks and delegates to the view model where appropriate.
-    /// </summary>
-    public partial class ClassworksSettingsPage : UserControl
+    public ClassworksSettingsPage()
     {
-        public ClassworksSettingsPage()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+    }
 
-        private void InitializeComponent()
-        {
-            AvaloniaXamlLoader.Load(this);
-        }
+    public ClassworksSettingsPage(ClassworksSettingsViewModel viewModel) : this()
+    {
+        DataContext = viewModel;
+    }
 
-        private async void OnSaveSettingsClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void OnSaveSettingsClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ClassworksSettingsViewModel vm)
         {
-            if (DataContext is ClassworksSettingsViewModel vm)
-            {
-                await vm.SaveSettingsAsync();
-            }
+            await vm.SaveSettingsAsync();
         }
+    }
 
-        private async void OnBrowserLoginClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void OnBrowserLoginClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ClassworksSettingsViewModel vm)
         {
-            if (DataContext is ClassworksSettingsViewModel vm)
-            {
-                await vm.BeginBrowserLoginAsync();
-            }
+            await vm.BeginBrowserLoginAsync();
         }
     }
 }

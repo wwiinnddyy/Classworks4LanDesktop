@@ -1,0 +1,129 @@
+# Manual release only. Does NOT bump plugin version — update csproj/plugin.json locally first.
+# This plugin has not been validated for production release; releases are created as draft + prerelease.
+name: Classworks Plugin Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_version:
+        description: "Must match plugin.json version exactly (e.g. 0.1.0)"
+        required: true
+        type: string
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  LMD_REPOSITORY: wwiinnddyy/LanMountainDesktop
+
+permissions:
+  contents: write
+
+concurrency:
+  group: classworks-plugin-release-${{ github.event.inputs.confirm_version || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout LanMountainDesktop
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.LMD_REPOSITORY }}
+          fetch-depth: 0
+          path: LanMountainDesktop
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Initialize local package feed
+        shell: pwsh
+        run: |
+          $repoRoot = (Resolve-Path ".").Path
+          $feedPath = Join-Path $repoRoot "packages"
+          $sdkProject = Join-Path (Resolve-Path ".\LanMountainDesktop\LanMountainDesktop.PluginSdk").Path "LanMountainDesktop.PluginSdk.csproj"
+          $contractsProject = Join-Path (Resolve-Path ".\LanMountainDesktop\LanMountainDesktop.Shared.Contracts").Path "LanMountainDesktop.Shared.Contracts.csproj"
+          $pluginIsolationContractsProject = Join-Path (Resolve-Path ".\LanMountainDesktop\LanMountainDesktop.PluginIsolation.Contracts").Path "LanMountainDesktop.PluginIsolation.Contracts.csproj"
+          $sharedIpcProject = Join-Path (Resolve-Path ".\LanMountainDesktop\LanMountainDesktop.Shared.IPC").Path "LanMountainDesktop.Shared.IPC.csproj"
+          .\scripts\Initialize-LocalPackageFeed.ps1 `
+            -FeedPath $feedPath `
+            -PluginSdkProjectPath $sdkProject `
+            -CoreContractsProjectPath $contractsProject `
+            -PluginIsolationContractsProjectPath $pluginIsolationContractsProject `
+            -SharedIpcProjectPath $sharedIpcProject
+
+      - name: Resolve release metadata
+        id: metadata
+        shell: pwsh
+        run: |
+          $manifest = Get-Content .\plugin.json -Encoding UTF8 -Raw | ConvertFrom-Json
+          $version = $manifest.version.Trim()
+          $requested = "${{ github.event.inputs.confirm_version }}".Trim()
+          if ($requested.StartsWith("v", [System.StringComparison]::OrdinalIgnoreCase)) {
+            $requested = $requested.Substring(1)
+          }
+
+          if ($version -ne $requested) {
+            throw "Confirm version '$requested' does not match plugin.json version '$version'. Update manifest locally before releasing; this workflow does not bump versions."
+          }
+
+          $assetName = "$($manifest.id).$version.laapp"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "release_tag=v$version" >> $env:GITHUB_OUTPUT
+          "asset_name=$assetName" >> $env:GITHUB_OUTPUT
+
+      - name: Validate plugin metadata
+        shell: pwsh
+        run: .\scripts\Test-PluginConsistency.ps1 -RepositoryRoot (Resolve-Path ".").Path
+
+      - name: Build plugin package
+        shell: pwsh
+        run: dotnet build .\ClassworksPlugin.csproj -c Release -v minimal
+
+      - name: Validate built package
+        shell: pwsh
+        run: .\scripts\Test-PluginConsistency.ps1 -RepositoryRoot (Resolve-Path ".").Path -PackagePath ".\${{ steps.metadata.outputs.asset_name }}"
+
+      - name: Generate release notes
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path .\artifacts | Out-Null
+          $packagePath = Resolve-Path ".\${{ steps.metadata.outputs.asset_name }}"
+          $sha256 = (Get-FileHash -Path $packagePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $md5 = (Get-FileHash -Path $packagePath -Algorithm MD5).Hash.ToLowerInvariant()
+          Set-Content -Path .\artifacts\sha256.txt -Value $sha256 -Encoding utf8NoBOM
+          Set-Content -Path .\artifacts\md5.txt -Value $md5 -Encoding utf8NoBOM
+          @"
+          ## ${{ steps.metadata.outputs.release_tag }}
+
+          > Draft prerelease — plugin not yet validated for stable distribution.
+
+          - Package: ``${{ steps.metadata.outputs.asset_name }}``
+          - SHA256: ``$sha256``
+          - MD5: ``$md5``
+          "@ | Set-Content -Path .\artifacts\release-notes.md -Encoding utf8
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.metadata.outputs.release_tag }}
+          name: ${{ steps.metadata.outputs.release_tag }}
+          body_path: artifacts/release-notes.md
+          files: |
+            ${{ steps.metadata.outputs.asset_name }}
+            artifacts/sha256.txt
+            artifacts/md5.txt
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          draft: true
+          prerelease: true
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,6 @@
+{
+  "plugin.description": "在阑山桌面上显示并同步 Classworks 班级作业。",
+  "settings.page_title": "Classworks 设置",
+  "widget.display_name": "Classworks 作业",
+  "widget.category": "Classworks"
+}
