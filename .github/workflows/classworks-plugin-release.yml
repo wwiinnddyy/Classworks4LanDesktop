@@ -63,7 +63,7 @@ jobs:
         id: metadata
         shell: pwsh
         run: |
-          $manifest = Get-Content .\plugin.json -Encoding UTF8 -Raw | ConvertFrom-Json
+          $manifest = Get-Content .\airapp.json -Encoding UTF8 -Raw | ConvertFrom-Json
           $version = $manifest.version.Trim()
           $requested = "${{ github.event.inputs.confirm_version }}".Trim()
           if ($requested.StartsWith("v", [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -71,7 +71,7 @@ jobs:
           }
 
           if ($version -ne $requested) {
-            throw "Confirm version '$requested' does not match plugin.json version '$version'. Update manifest locally before releasing; this workflow does not bump versions."
+            throw "Confirm version '$requested' does not match airapp.json version '$version'. Update manifest locally before releasing; this workflow does not bump versions."
           }
 
           $assetName = "$($manifest.id).$version.laapp"

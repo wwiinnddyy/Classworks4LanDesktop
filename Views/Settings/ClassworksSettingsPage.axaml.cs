@@ -1,9 +1,9 @@
 using ClassworksPlugin.ViewModels.Settings;
-using LanMountainDesktop.PluginSdk;
+using Avalonia.Controls;
 
 namespace ClassworksPlugin.Views.Settings;
 
-public partial class ClassworksSettingsPage : SettingsPageBase
+public partial class ClassworksSettingsPage : UserControl
 {
     public ClassworksSettingsPage()
     {

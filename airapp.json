@@ -1,0 +1,21 @@
+{
+  "id": "com.classworks.landesktop",
+  "name": "Classworks 作业组件",
+  "version": "0.0.7",
+  "apiVersion": "1.0.0",
+  "author": "Classworks4LanDesktop",
+  "description": "在阑山桌面上显示并同步 Classworks 班级作业板数据。",
+  "entranceAssembly": "ClassworksPlugin.dll",
+  "runtime": {
+    "mode": "in-process",
+    "capabilities": ["desktop-component"]
+  },
+  "components": [
+    {
+      "id": "classworks-homework",
+      "name": "Classworks 作业",
+      "defaultWidth": 3,
+      "defaultHeight": 4
+    }
+  ]
+}

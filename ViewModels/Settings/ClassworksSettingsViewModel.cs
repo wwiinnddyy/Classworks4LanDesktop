@@ -2,26 +2,21 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using ClassworksPlugin.Services;
-using LanMountainDesktop.PluginSdk;
 
 namespace ClassworksPlugin.ViewModels.Settings;
 
 public sealed class ClassworksSettingsViewModel : INotifyPropertyChanged
 {
     private readonly ClassworksSettingsService _settingsService;
-    private readonly PluginLocalizer _localizer;
     private int _loginMethodIndex;
     private string _namespaceId = string.Empty;
     private string _password = string.Empty;
     private string _appId = string.Empty;
     private string _kvBaseUrl = ClassworksService.DefaultKvBaseUrl;
 
-    public ClassworksSettingsViewModel(
-        ClassworksSettingsService settingsService,
-        PluginLocalizer localizer)
+    public ClassworksSettingsViewModel(ClassworksSettingsService settingsService)
     {
         _settingsService = settingsService;
-        _localizer = localizer;
 
         var settings = _settingsService.GetSettings();
         _namespaceId = settings.NamespaceId;
@@ -103,7 +98,7 @@ public sealed class ClassworksSettingsViewModel : INotifyPropertyChanged
         }
     }
 
-    public string PageTitle => T("settings.page_title", "Classworks 设置");
+    public string PageTitle => "Classworks 设置";
 
     public Task SaveSettingsAsync()
     {
@@ -134,8 +129,6 @@ public sealed class ClassworksSettingsViewModel : INotifyPropertyChanged
 
         return Task.CompletedTask;
     }
-
-    private string T(string key, string fallback) => _localizer.GetString(key, fallback);
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
