@@ -1,36 +1,66 @@
 using ClassworksPlugin.Services;
-using LanMountainDesktop.PluginSdk;
-
+using LanMountainDesktop.AirAppSdk;
 using Avalonia.Controls;
+using Avalonia.Threading;
+using System.Threading;
+using Avalonia.Media;
+using Avalonia;
 
 namespace ClassworksPlugin.Widgets;
 
-public partial class ClassworksHomeworkWidget : UserControl
+public partial class ClassworksHomeworkWidget : AirAppWidgetBase
 {
     private readonly ClassworksHomeworkViewModel _viewModel;
+    private CancellationTokenSource? _cancellationTokenSource;
+    private bool _isDarkMode;
 
     public ClassworksHomeworkWidget(
-        PluginDesktopComponentContext context,
         ClassworksSettingsService settingsService,
-        ClassworksService classworksService) : this()
+        ClassworksService classworksService)
     {
-        _ = context;
+        InitializeComponent();
         _viewModel = new ClassworksHomeworkViewModel(settingsService, classworksService);
         DataContext = _viewModel;
 
-        AttachedToVisualTree += async (_, _) =>
-        {
-            await _viewModel.LoadAssignmentsAsync();
-        };
+        ActualThemeVariantChanged += (_, _) => UpdateTheme();
     }
 
-    public ClassworksHomeworkWidget()
+    protected override void OnAttachedCore()
     {
-        InitializeComponent();
-        _viewModel = new ClassworksHomeworkViewModel(
-            new ClassworksSettingsService(Path.Combine(Path.GetTempPath(), "classworks-design")),
-            new ClassworksService());
-        DataContext = _viewModel;
+        UpdateTheme();
+        _ = _viewModel.LoadAssignmentsAsync();
+    }
+
+    protected override void OnDetachedCore()
+    {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
+    }
+
+    protected override void OnAppearanceChangedCore(AirAppAppearanceSnapshot snapshot)
+    {
+        var newIsDarkMode = snapshot.IsDarkMode;
+        if (_isDarkMode != newIsDarkMode)
+        {
+            _isDarkMode = newIsDarkMode;
+            Dispatcher.UIThread.Post(() => UpdateTheme());
+        }
+    }
+
+    private void UpdateTheme()
+    {
+        _isDarkMode = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
+
+        if (_isDarkMode)
+        {
+            RootBorder.Background = new SolidColorBrush(Color.Parse("#1B2129"));
+            RootBorder.BorderBrush = new SolidColorBrush(Color.Parse("#2D3440"));
+        }
+        else
+        {
+            RootBorder.Background = new SolidColorBrush(Color.Parse("#FCFBFA"));
+            RootBorder.BorderBrush = new SolidColorBrush(Color.Parse("#E8E8E8"));
+        }
     }
 
     private async void OnRefreshClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
