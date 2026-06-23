@@ -1,4 +1,4 @@
-# Manual release only. Does NOT bump plugin version â€” update csproj/plugin.json locally first.
+# Manual release only. Does NOT bump plugin version â€?update csproj/plugin.json locally first.
 # This plugin has not been validated for production release; releases are created as draft + prerelease.
 name: Classworks Plugin Release
 
@@ -27,19 +27,19 @@ jobs:
 
     steps:
       - name: Checkout plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Checkout LanMountainDesktop
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ env.LMD_REPOSITORY }}
           fetch-depth: 0
           path: LanMountainDesktop
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -103,7 +103,7 @@ jobs:
           @"
           ## ${{ steps.metadata.outputs.release_tag }}
 
-          > Draft prerelease â€” plugin not yet validated for stable distribution.
+          > Draft prerelease â€?plugin not yet validated for stable distribution.
 
           - Package: ``${{ steps.metadata.outputs.asset_name }}``
           - SHA256: ``$sha256``
