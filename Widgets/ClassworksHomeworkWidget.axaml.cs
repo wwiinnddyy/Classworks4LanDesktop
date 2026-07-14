@@ -1,50 +1,83 @@
 using ClassworksPlugin.Services;
-using LanMountainDesktop.AirAppSdk;
+using LanMountainDesktop.PluginSdk;
 using Avalonia.Controls;
 using Avalonia.Threading;
-using System.Threading;
 using Avalonia.Media;
 using Avalonia;
+using Avalonia.VisualTree;
 
 namespace ClassworksPlugin.Widgets;
 
-public partial class ClassworksHomeworkWidget : AirAppWidgetBase
+public partial class ClassworksHomeworkWidget : UserControl
 {
     private readonly ClassworksHomeworkViewModel _viewModel;
-    private CancellationTokenSource? _cancellationTokenSource;
+    private readonly IPluginAppearanceContext? _appearance;
     private bool _isDarkMode;
 
+    public ClassworksHomeworkWidget()
+    {
+        InitializeComponent();
+        var designDataDirectory = Path.Combine(Path.GetTempPath(), "Classworks4LanDesktop", "Design");
+        _viewModel = new ClassworksHomeworkViewModel(
+            new ClassworksSettingsService(designDataDirectory),
+            new ClassworksService());
+        InitializeView();
+    }
+
     public ClassworksHomeworkWidget(
+        PluginDesktopComponentContext context,
         ClassworksSettingsService settingsService,
         ClassworksService classworksService)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         InitializeComponent();
+        _appearance = context.Appearance;
         _viewModel = new ClassworksHomeworkViewModel(settingsService, classworksService);
+        InitializeView();
+    }
+
+    private void InitializeView()
+    {
         DataContext = _viewModel;
 
         ActualThemeVariantChanged += (_, _) => UpdateTheme();
+        AttachedToVisualTree += OnAttachedToVisualTree;
+        DetachedFromVisualTree += OnDetachedFromVisualTree;
+        ApplyAppearance();
     }
 
-    protected override void OnAttachedCore()
+    private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        UpdateTheme();
+        if (_appearance is not null)
+        {
+            _appearance.Changed -= OnAppearanceChanged;
+            _appearance.Changed += OnAppearanceChanged;
+        }
+
+        ApplyAppearance();
         _ = _viewModel.LoadAssignmentsAsync();
     }
 
-    protected override void OnDetachedCore()
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        _cancellationTokenSource?.Cancel();
-        _cancellationTokenSource?.Dispose();
+        if (_appearance is not null)
+        {
+            _appearance.Changed -= OnAppearanceChanged;
+        }
     }
 
-    protected override void OnAppearanceChangedCore(AirAppAppearanceSnapshot snapshot)
+    private void OnAppearanceChanged(object? sender, AppearanceChangedEvent e)
     {
-        var newIsDarkMode = snapshot.IsDarkMode;
-        if (_isDarkMode != newIsDarkMode)
-        {
-            _isDarkMode = newIsDarkMode;
-            Dispatcher.UIThread.Post(() => UpdateTheme());
-        }
+        Dispatcher.UIThread.Post(ApplyAppearance);
+    }
+
+    private void ApplyAppearance()
+    {
+        RootBorder.CornerRadius = _appearance is null
+            ? new CornerRadius(12)
+            : new CornerRadius(_appearance.ResolveCornerRadius(PluginCornerRadiusPreset.Component));
+        UpdateTheme();
     }
 
     private void UpdateTheme()

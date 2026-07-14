@@ -1,0 +1,7 @@
+bin/
+obj/
+artifacts/
+.nuget/
+packages/
+*.user
+*.suo

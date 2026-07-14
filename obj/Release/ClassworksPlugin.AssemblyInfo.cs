@@ -12,11 +12,11 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("ClassworksPlugin")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
-[assembly: System.Reflection.AssemblyFileVersionAttribute("0.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+ae523696c6f7f1e66bb99a2b5305a732a4999f78")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("0.2.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.2.0+93da9ae16a4eef429a06aa18c9d416d8b45766f9")]
 [assembly: System.Reflection.AssemblyProductAttribute("ClassworksPlugin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ClassworksPlugin")]
-[assembly: System.Reflection.AssemblyVersionAttribute("0.1.0.0")]
+[assembly: System.Reflection.AssemblyVersionAttribute("0.2.0.0")]
 
 // 由 MSBuild WriteCodeFragment 类生成。
 

@@ -11,7 +11,8 @@ public sealed class ClassworksSettingsViewModel : INotifyPropertyChanged
     private int _loginMethodIndex;
     private string _namespaceId = string.Empty;
     private string _password = string.Empty;
-    private string _appId = string.Empty;
+    private string _appId = ClassworksService.DefaultAppId;
+    private string _appToken = string.Empty;
     private string _kvBaseUrl = ClassworksService.DefaultKvBaseUrl;
 
     public ClassworksSettingsViewModel(ClassworksSettingsService settingsService)
@@ -22,6 +23,7 @@ public sealed class ClassworksSettingsViewModel : INotifyPropertyChanged
         _namespaceId = settings.NamespaceId;
         _password = settings.Password;
         _appId = settings.AppId;
+        _appToken = settings.AppToken;
         _kvBaseUrl = settings.KvBaseUrl;
     }
 
@@ -85,6 +87,19 @@ public sealed class ClassworksSettingsViewModel : INotifyPropertyChanged
         }
     }
 
+    public string AppToken
+    {
+        get => _appToken;
+        set
+        {
+            if (_appToken != value)
+            {
+                _appToken = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public string KvBaseUrl
     {
         get => _kvBaseUrl;
@@ -106,11 +121,19 @@ public sealed class ClassworksSettingsViewModel : INotifyPropertyChanged
         {
             settings.NamespaceId = NamespaceId ?? string.Empty;
             settings.Password = Password ?? string.Empty;
-            settings.AppId = AppId ?? string.Empty;
+            settings.AppId = string.IsNullOrWhiteSpace(AppId)
+                ? ClassworksService.DefaultAppId
+                : AppId.Trim();
+            settings.AppToken = AppToken?.Trim() ?? string.Empty;
             settings.KvBaseUrl = string.IsNullOrWhiteSpace(KvBaseUrl)
                 ? ClassworksService.DefaultKvBaseUrl
                 : KvBaseUrl.Trim();
-        });
+        },
+        nameof(ClassworksSettings.NamespaceId),
+        nameof(ClassworksSettings.Password),
+        nameof(ClassworksSettings.AppId),
+        nameof(ClassworksSettings.AppToken),
+        nameof(ClassworksSettings.KvBaseUrl));
         return Task.CompletedTask;
     }
 

@@ -1,16 +1,18 @@
-using System.Net.Http.Headers;
 using ClassworksPlugin.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Net;
 
 namespace ClassworksPlugin.Services;
 
 /// <summary>
 /// Classworks 使用厚浪云 KV 服务同步每日作业，键名为 classworks-data-YYYYMMDD。
 /// </summary>
-public sealed class ClassworksService
+public sealed class ClassworksService : IDisposable
 {
-    public const string DefaultKvBaseUrl = "https://kv-service.wuyuan.dev";
+    public const string DefaultKvBaseUrl = "https://kv-service.houlang.cloud";
+    public const string LegacyKvBaseUrl = "https://kv-service.wuyuan.dev";
+    public const string DefaultAppId = "d158067f53627d2b98babe8bffd2fd7d";
 
     private readonly HttpClient _httpClient = new()
     {
@@ -28,7 +30,7 @@ public sealed class ClassworksService
     {
         var baseUrl = NormalizeBaseUrl(kvBaseUrl);
         var url = $"{baseUrl}/apps/auth/token";
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new StringContent(JsonConvert.SerializeObject(new
             {
@@ -46,7 +48,10 @@ public sealed class ClassworksService
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         var json = JObject.Parse(body);
-        return json["token"]?.ToString();
+        Token = json["token"]?.ToString()
+                ?? json["data"]?["token"]?.ToString()
+                ?? string.Empty;
+        return string.IsNullOrWhiteSpace(Token) ? null : Token;
     }
 
     public async Task<IReadOnlyList<Assignment>> GetAssignmentsAsync(
@@ -62,8 +67,8 @@ public sealed class ClassworksService
         var baseUrl = NormalizeBaseUrl(kvBaseUrl);
         var key = $"classworks-data-{date:yyyyMMdd}";
         var url = $"{baseUrl}/kv/{Uri.EscapeDataString(key)}";
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        AddAppTokenHeader(request);
 
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
@@ -75,8 +80,7 @@ public sealed class ClassworksService
         return ParseHomework(body, date);
     }
 
-    public async Task AddAssignmentAsync(
-        Assignment assignment,
+    public async Task SaveAssignmentsAsync(
         DateTime date,
         IReadOnlyCollection<Assignment> allAssignments,
         string? kvBaseUrl = null,
@@ -92,19 +96,19 @@ public sealed class ClassworksService
         var url = $"{baseUrl}/kv/{Uri.EscapeDataString(key)}";
 
         JObject? currentJson = null;
-        try
+        using var getRequest = new HttpRequestMessage(HttpMethod.Get, url);
+        AddAppTokenHeader(getRequest);
+        using (var getResp = await _httpClient.SendAsync(getRequest, cancellationToken))
         {
-            var getRequest = new HttpRequestMessage(HttpMethod.Get, url);
-            getRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-            using var getResp = await _httpClient.SendAsync(getRequest, cancellationToken);
             if (getResp.IsSuccessStatusCode)
             {
                 var body = await getResp.Content.ReadAsStringAsync(cancellationToken);
-                currentJson = JObject.Parse(body);
+                currentJson = ParseBoardDocument(body);
             }
-        }
-        catch
-        {
+            else if (getResp.StatusCode != HttpStatusCode.NotFound)
+            {
+                getResp.EnsureSuccessStatusCode();
+            }
         }
 
         var homework = new JObject();
@@ -121,21 +125,16 @@ public sealed class ClassworksService
             };
         }
 
-        var finalJson = new JObject
-        {
-            ["homework"] = homework
-        };
+        var finalJson = currentJson is null
+            ? new JObject()
+            : (JObject)currentJson.DeepClone();
+        finalJson["homework"] = homework;
 
-        if (currentJson?["attendance"] is JToken attendance)
-        {
-            finalJson["attendance"] = attendance.DeepClone();
-        }
-
-        var postRequest = new HttpRequestMessage(HttpMethod.Post, url)
+        using var postRequest = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new StringContent(finalJson.ToString(Formatting.None), System.Text.Encoding.UTF8, "application/json")
         };
-        postRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        AddAppTokenHeader(postRequest);
         using var postResp = await _httpClient.SendAsync(postRequest, cancellationToken);
         postResp.EnsureSuccessStatusCode();
     }
@@ -147,7 +146,7 @@ public sealed class ClassworksService
             return Array.Empty<Assignment>();
         }
 
-        var root = JObject.Parse(jsonBody);
+        var root = ParseBoardDocument(jsonBody);
         if (root["homework"] is not JObject homework)
         {
             return Array.Empty<Assignment>();
@@ -172,5 +171,35 @@ public sealed class ClassworksService
     {
         var value = string.IsNullOrWhiteSpace(kvBaseUrl) ? DefaultKvBaseUrl : kvBaseUrl.Trim();
         return value.TrimEnd('/');
+    }
+
+    private void AddAppTokenHeader(HttpRequestMessage request)
+    {
+        request.Headers.TryAddWithoutValidation("x-app-token", Token);
+    }
+
+    private static JObject ParseBoardDocument(string jsonBody)
+    {
+        var root = JObject.Parse(jsonBody);
+        if (root["value"] is JObject objectValue)
+        {
+            return objectValue;
+        }
+
+        if (root["value"]?.Type == JTokenType.String)
+        {
+            var value = root["value"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return JObject.Parse(value);
+            }
+        }
+
+        return root;
+    }
+
+    public void Dispose()
+    {
+        _httpClient.Dispose();
     }
 }

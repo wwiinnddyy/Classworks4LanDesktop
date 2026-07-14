@@ -1,0 +1,21 @@
+{
+  "projectUrl": "https://github.com/wwiinnddyy/Classworks4LanDesktop",
+  "repositoryUrl": "https://github.com/wwiinnddyy/Classworks4LanDesktop",
+  "readmeUrl": "https://github.com/wwiinnddyy/Classworks4LanDesktop#readme",
+  "homepageUrl": "https://github.com/ZeroCatDev/Classworks",
+  "iconUrl": "",
+  "minHostVersion": "0.8.6",
+  "tags": [
+    "classworks",
+    "homework",
+    "education",
+    "desktop-widget"
+  ],
+  "desktopComponents": [
+    "Classworks4LanDesktop.Homework"
+  ],
+  "settingsSections": [
+    "connection"
+  ],
+  "releaseNotes": "Migrated to Plugin SDK 5, aligned with the current Classworks x-app-token protocol, and added a production-ready market manifest workflow."
+}

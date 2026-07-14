@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$RepositoryRoot,
-    [string]$PackagePath
+    [string]$PackagePath,
+    [string]$MarketManifestPath
 )
 
 Set-StrictMode -Version Latest
@@ -27,6 +28,32 @@ function Get-VersionCore([string]$Value) {
     return $candidate
 }
 
+function Get-ManifestFromPackage([string]$ArchivePath) {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($ArchivePath)
+    try {
+        $entry = $archive.Entries | Where-Object { $_.FullName -eq "plugin.json" } | Select-Object -First 1
+        if ($null -eq $entry) {
+            throw "Plugin package '$ArchivePath' does not contain plugin.json."
+        }
+
+        $stream = $entry.Open()
+        $reader = [System.IO.StreamReader]::new($stream, [System.Text.UTF8Encoding]::UTF8, $true)
+        try {
+            return $reader.ReadToEnd() | ConvertFrom-Json
+        }
+        finally {
+            $reader.Dispose()
+            $stream.Dispose()
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
+}
+
 $csprojPath = Join-Path $RepositoryRoot "ClassworksPlugin.csproj"
 $manifestPath = Join-Path $RepositoryRoot "plugin.json"
 
@@ -39,6 +66,31 @@ if (-not $csprojMatch.Success) {
     throw "Missing <Version> in '$csprojPath'."
 }
 
+if ($csprojContent -notmatch '<PackageReference\s+Include="LanMountainDesktop\.PluginSdk"\s+Version="5\.0\.0"') {
+    throw "ClassworksPlugin.csproj must reference LanMountainDesktop.PluginSdk 5.0.0."
+}
+
+if ($csprojContent -match 'LanMountainDesktop\.AirAppSdk') {
+    throw "Production Plugin SDK projects must not reference LanMountainDesktop.AirAppSdk."
+}
+
+$assetsPath = Join-Path $RepositoryRoot "obj\project.assets.json"
+if (Test-Path -LiteralPath $assetsPath -PathType Leaf) {
+    $assets = Get-Content -LiteralPath $assetsPath -Encoding UTF8 -Raw | ConvertFrom-Json
+    $resolvedLibraries = @($assets.libraries.PSObject.Properties.Name)
+    $requiredLibraries = @(
+        'LanMountainDesktop.PluginSdk/5.0.0',
+        'Avalonia/12.1.0',
+        'FluentAvaloniaUI/3.0.1',
+        'FluentIcons.Avalonia/2.1.331'
+    )
+    foreach ($requiredLibrary in $requiredLibraries) {
+        if ($resolvedLibraries -notcontains $requiredLibrary) {
+            throw "project.assets.json did not resolve '$requiredLibrary'. Run restore with --force --no-cache."
+        }
+    }
+}
+
 $csprojVersion = Get-VersionCore $csprojMatch.Groups["version"].Value
 $manifest = Get-Content $manifestPath -Encoding UTF8 -Raw | ConvertFrom-Json
 $manifestVersion = Get-VersionCore $manifest.version
@@ -48,8 +100,24 @@ if ($csprojVersion -ne $manifestVersion) {
     throw "Version mismatch. csproj=$csprojVersion plugin.json=$manifestVersion"
 }
 
+if ($manifest.id -ne "Classworks4LanDesktop") {
+    throw "Plugin id mismatch. Expected Classworks4LanDesktop, actual=$($manifest.id)"
+}
+
+if ($manifest.entranceAssembly -ne "ClassworksPlugin.dll") {
+    throw "Entrance assembly mismatch. Expected ClassworksPlugin.dll, actual=$($manifest.entranceAssembly)"
+}
+
 if ($manifestApiVersion -ne "5.0.0") {
     throw "API version mismatch. Expected plugin.json apiVersion=5.0.0, actual=$manifestApiVersion"
+}
+
+if ($manifest.runtime.mode -ne "in-proc") {
+    throw "Runtime mode mismatch. Expected in-proc, actual=$($manifest.runtime.mode)"
+}
+
+if (Test-Path (Join-Path $RepositoryRoot "airapp.json")) {
+    throw "This repository is a production Plugin SDK project. Remove the legacy airapp.json so CI cannot publish the wrong manifest."
 }
 
 $expectedAssetName = "$($manifest.id).$csprojVersion.laapp"
@@ -58,6 +126,59 @@ if ($PackagePath) {
     $resolvedPackagePath = Resolve-Path $PackagePath -ErrorAction Stop
     if ([System.IO.Path]::GetFileName($resolvedPackagePath) -ne $expectedAssetName) {
         throw "Package name mismatch. Expected '$expectedAssetName', actual '$([System.IO.Path]::GetFileName($resolvedPackagePath))'."
+    }
+
+
+    $packageManifest = Get-ManifestFromPackage -ArchivePath $resolvedPackagePath
+    if ($packageManifest.id -ne $manifest.id -or
+        $packageManifest.version -ne $manifest.version -or
+        $packageManifest.apiVersion -ne $manifest.apiVersion -or
+        $packageManifest.runtime.mode -ne $manifest.runtime.mode) {
+        throw "Package manifest does not match repository plugin.json."
+    }
+
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($resolvedPackagePath)
+    try {
+        foreach ($entry in $archive.Entries) {
+            $entryName = $entry.FullName.Replace('\', '/')
+            $leafName = [System.IO.Path]::GetFileName($entryName)
+            if ($entryName.Contains("..")) {
+                throw "Package contains unsafe entry '$entryName'."
+            }
+            if ($leafName -match '\.pdb$' -or
+                $entryName -match '(^|/)(bin|obj|node_modules)/' -or
+                $leafName -eq 'LanMountainDesktop.PluginSdk.dll' -or
+                $leafName -like 'Avalonia*.dll' -or
+                $leafName -like 'FluentAvalonia*.dll' -or
+                $leafName -like 'FluentIcons*.dll') {
+                throw "Package contains forbidden host/development asset '$entryName'."
+            }
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
+}
+
+if ($MarketManifestPath) {
+    $market = Get-Content -LiteralPath $MarketManifestPath -Encoding UTF8 -Raw | ConvertFrom-Json
+    if ($market.schemaVersion -ne '2.0.0' -or
+        $market.manifest.id -ne $manifest.id -or
+        $market.manifest.version -ne $manifest.version -or
+        $market.manifest.apiVersion -ne '5.0.0' -or
+        $market.compatibility.minHostVersion -ne '0.8.6' -or
+        $market.publication.releaseTag -ne "v$csprojVersion" -or
+        $market.publication.releaseAssetName -ne $expectedAssetName) {
+        throw "Market manifest does not match the plugin release metadata."
+    }
+
+    $sources = @($market.publication.packageSources)
+    if ($sources.Count -ne 3 -or
+        $sources[0].kind -ne 'releaseAsset' -or
+        $sources[1].kind -ne 'rawFallback' -or
+        $sources[2].kind -ne 'workspaceLocal' -or
+        -not ([string]$sources[2].url).StartsWith('workspace://', [System.StringComparison]::Ordinal)) {
+        throw "Market package sources must be releaseAsset -> rawFallback -> workspaceLocal, with a workspace:// URL."
     }
 }
 

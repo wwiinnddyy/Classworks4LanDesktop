@@ -64,10 +64,10 @@
       <Expander Header="➕ 添加新作业"
                 IsExpanded="False">
         <StackPanel Spacing="8" Margin="0,8,0,0">
-          <TextBox Watermark="科目名称（例如：数学）"
+          <TextBox PlaceholderText="科目名称（例如：数学）"
                    Text="{Binding NewTitle}"
                    MaxLength="50"/>
-          <TextBox Watermark="作业内容（例如：完成习题册 P42-45）"
+          <TextBox PlaceholderText="作业内容（例如：完成习题册 P42-45）"
                    Text="{Binding NewDescription}"
                    AcceptsReturn="True"
                    TextWrapping="Wrap"

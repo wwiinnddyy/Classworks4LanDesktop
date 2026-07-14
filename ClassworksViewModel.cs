@@ -88,31 +88,16 @@ public sealed class ClassworksHomeworkViewModel : INotifyPropertyChanged
             Status = "正在加载作业...";
 
             var settings = _settingsService.GetSettings();
-            if (string.IsNullOrWhiteSpace(settings.NamespaceId) ||
-                string.IsNullOrWhiteSpace(settings.Password) ||
-                string.IsNullOrWhiteSpace(settings.AppId))
+            if (!HasConnectionCredentials(settings))
             {
-                Status = "⚠️ 请先在设置中配置 Classworks 连接信息";
+                Status = "⚠️ 请先在设置中填写 App Token，或填写命名空间与密码";
                 return;
             }
 
-            // Authenticate first
-            if (string.IsNullOrEmpty(_service.Token))
+            if (!await EnsureAuthenticatedAsync(settings))
             {
-                Status = "正在认证...";
-                var token = await _service.AuthenticateAsync(
-                    settings.NamespaceId,
-                    settings.Password,
-                    settings.AppId,
-                    settings.KvBaseUrl);
-
-                if (string.IsNullOrEmpty(token))
-                {
-                    Status = "❌ 认证失败，请检查配置信息";
-                    return;
-                }
-
-                _service.Token = token;
+                Status = "❌ 认证失败，请检查 App Token 或命名空间信息";
+                return;
             }
 
             // Load today's assignments
@@ -169,22 +154,16 @@ public sealed class ClassworksHomeworkViewModel : INotifyPropertyChanged
 
             var settings = _settingsService.GetSettings();
 
-            // Ensure authenticated
-            if (string.IsNullOrEmpty(_service.Token))
+            if (!HasConnectionCredentials(settings))
             {
-                var token = await _service.AuthenticateAsync(
-                    settings.NamespaceId,
-                    settings.Password,
-                    settings.AppId,
-                    settings.KvBaseUrl);
+                Status = "⚠️ 请先配置 Classworks App Token 或命名空间信息";
+                return;
+            }
 
-                if (string.IsNullOrEmpty(token))
-                {
-                    Status = "❌ 认证失败，无法添加作业";
-                    return;
-                }
-
-                _service.Token = token;
+            if (!await EnsureAuthenticatedAsync(settings))
+            {
+                Status = "❌ 认证失败，无法添加作业";
+                return;
             }
 
             // Add to local list first
@@ -194,7 +173,7 @@ public sealed class ClassworksHomeworkViewModel : INotifyPropertyChanged
             });
 
             // Sync to cloud
-            await _service.AddAssignmentAsync(assignment, DateTime.Today, Assignments, settings.KvBaseUrl);
+            await _service.SaveAssignmentsAsync(DateTime.Today, Assignments, settings.KvBaseUrl);
 
             // Clear form
             NewTitle = string.Empty;
@@ -225,6 +204,36 @@ public sealed class ClassworksHomeworkViewModel : INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    private static bool HasConnectionCredentials(ClassworksSettings settings)
+    {
+        return !string.IsNullOrWhiteSpace(settings.AppToken) ||
+               (!string.IsNullOrWhiteSpace(settings.NamespaceId) &&
+                !string.IsNullOrWhiteSpace(settings.Password));
+    }
+
+    private async Task<bool> EnsureAuthenticatedAsync(ClassworksSettings settings)
+    {
+        if (!string.IsNullOrWhiteSpace(settings.AppToken))
+        {
+            _service.Token = settings.AppToken.Trim();
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_service.Token))
+        {
+            return true;
+        }
+
+        Status = "正在认证...";
+        var token = await _service.AuthenticateAsync(
+            settings.NamespaceId,
+            settings.Password,
+            settings.AppId,
+            settings.KvBaseUrl);
+
+        return !string.IsNullOrWhiteSpace(token);
+    }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
