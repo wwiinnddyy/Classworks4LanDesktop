@@ -75,7 +75,11 @@ if ($csprojContent -match 'LanMountainDesktop\.AirAppSdk') {
 }
 
 $assetsPath = Join-Path $RepositoryRoot "obj\project.assets.json"
-if (Test-Path -LiteralPath $assetsPath -PathType Leaf) {
+if ($PackagePath) {
+    if (-not (Test-Path -LiteralPath $assetsPath -PathType Leaf)) {
+        throw "project.assets.json was not found. Run restore with --force --no-cache before validating a package."
+    }
+
     $assets = Get-Content -LiteralPath $assetsPath -Encoding UTF8 -Raw | ConvertFrom-Json
     $resolvedLibraries = @($assets.libraries.PSObject.Properties.Name)
     $requiredLibraries = @(

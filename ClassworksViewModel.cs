@@ -23,7 +23,7 @@ public sealed class ClassworksHomeworkViewModel : INotifyPropertyChanged
         _settingsService = settingsService;
         _service = service;
         Assignments = new ObservableCollection<Assignment>();
-        _settingsService.SettingsChanged += (_, _) => _ = LoadAssignmentsAsync();
+        _settingsService.SettingsChanged += OnSettingsChanged;
     }
 
     public ObservableCollection<Assignment> Assignments { get; }
@@ -204,6 +204,12 @@ public sealed class ClassworksHomeworkViewModel : INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnSettingsChanged(object? sender, ClassworksSettings settings)
+    {
+        _service.Token = string.Empty;
+        _ = LoadAssignmentsAsync();
+    }
 
     private static bool HasConnectionCredentials(ClassworksSettings settings)
     {

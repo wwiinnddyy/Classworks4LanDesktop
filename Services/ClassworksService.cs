@@ -111,24 +111,7 @@ public sealed class ClassworksService : IDisposable
             }
         }
 
-        var homework = new JObject();
-        foreach (var item in allAssignments)
-        {
-            if (string.IsNullOrWhiteSpace(item.Title))
-            {
-                continue;
-            }
-
-            homework[item.Title] = new JObject
-            {
-                ["content"] = item.Description ?? string.Empty
-            };
-        }
-
-        var finalJson = currentJson is null
-            ? new JObject()
-            : (JObject)currentJson.DeepClone();
-        finalJson["homework"] = homework;
+        var finalJson = MergeAssignmentsIntoBoard(currentJson, allAssignments);
 
         using var postRequest = new HttpRequestMessage(HttpMethod.Post, url)
         {
@@ -165,6 +148,46 @@ public sealed class ClassworksService : IDisposable
         }
 
         return assignments;
+    }
+
+    internal static JObject MergeAssignmentsIntoBoard(
+        JObject? currentJson,
+        IReadOnlyCollection<Assignment> allAssignments)
+    {
+        ArgumentNullException.ThrowIfNull(allAssignments);
+
+        var finalJson = currentJson is null
+            ? new JObject()
+            : (JObject)currentJson.DeepClone();
+        JObject homework;
+        if (finalJson["homework"] is JObject existingHomework)
+        {
+            homework = existingHomework;
+        }
+        else
+        {
+            homework = new JObject();
+            finalJson["homework"] = homework;
+        }
+
+        foreach (var item in allAssignments)
+        {
+            if (string.IsNullOrWhiteSpace(item.Title))
+            {
+                continue;
+            }
+
+            var card = homework[item.Title] as JObject;
+            if (card is null)
+            {
+                card = new JObject();
+                homework[item.Title] = card;
+            }
+
+            card["content"] = item.Description ?? string.Empty;
+        }
+
+        return finalJson;
     }
 
     private static string NormalizeBaseUrl(string? kvBaseUrl)
