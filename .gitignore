@@ -5,3 +5,13 @@ artifacts/
 packages/
 *.user
 *.suo
+*.binlog
+.vs/
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+Thumbs.db
+.DS_Store
