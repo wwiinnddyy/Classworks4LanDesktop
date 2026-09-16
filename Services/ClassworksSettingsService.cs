@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using LanMountainDesktop.PluginSdk;
+using LanMountainDesktop.AirAppSdk;
 
 namespace ClassworksPlugin.Services;
 
@@ -98,7 +98,7 @@ public sealed class ClassworksSettingsService
     public const string SectionId = "connection";
 
     private readonly ISettingsService? _hostSettingsService;
-    private readonly IPluginRuntimeContext? _runtimeContext;
+    private readonly IAirAppRuntimeContext? _runtimeContext;
     private readonly string? _settingsPath;
     private ClassworksSettings _settings;
     private readonly object _syncRoot = new();
@@ -107,14 +107,14 @@ public sealed class ClassworksSettingsService
 
     public ClassworksSettingsService(
         ISettingsService settingsService,
-        IPluginRuntimeContext runtimeContext)
+        IAirAppRuntimeContext runtimeContext)
     {
         _hostSettingsService = settingsService;
         _runtimeContext = runtimeContext;
         Directory.CreateDirectory(runtimeContext.DataDirectory);
 
         _settings = settingsService.LoadSection<ClassworksSettings>(
-            SettingsScope.Plugin,
+            AirAppSettingsScope.AirApp,
             runtimeContext.Manifest.Id,
             SectionId);
         Normalize(_settings);
@@ -192,7 +192,7 @@ public sealed class ClassworksSettingsService
         if (_hostSettingsService is not null && _runtimeContext is not null)
         {
             _hostSettingsService.SaveSection(
-                SettingsScope.Plugin,
+                AirAppSettingsScope.AirApp,
                 _runtimeContext.Manifest.Id,
                 SectionId,
                 snapshot,

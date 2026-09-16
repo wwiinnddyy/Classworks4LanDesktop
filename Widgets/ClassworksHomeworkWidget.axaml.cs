@@ -1,5 +1,5 @@
 using ClassworksPlugin.Services;
-using LanMountainDesktop.PluginSdk;
+using LanMountainDesktop.AirAppSdk;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia.Media;
@@ -11,7 +11,7 @@ namespace ClassworksPlugin.Widgets;
 public partial class ClassworksHomeworkWidget : UserControl
 {
     private readonly ClassworksHomeworkViewModel _viewModel;
-    private readonly IPluginAppearanceContext? _appearance;
+    private readonly IAirAppAppearanceContext? _appearance;
     private bool _isDarkMode;
 
     public ClassworksHomeworkWidget()
@@ -25,7 +25,7 @@ public partial class ClassworksHomeworkWidget : UserControl
     }
 
     public ClassworksHomeworkWidget(
-        PluginDesktopComponentContext context,
+        AirAppComponentContext context,
         ClassworksSettingsService settingsService,
         ClassworksService classworksService)
     {
@@ -76,7 +76,7 @@ public partial class ClassworksHomeworkWidget : UserControl
     {
         RootBorder.CornerRadius = _appearance is null
             ? new CornerRadius(12)
-            : new CornerRadius(_appearance.ResolveCornerRadius(PluginCornerRadiusPreset.Component));
+            : new CornerRadius(_appearance.ResolveCornerRadius(AirAppCornerRadiusPreset.Component));
         UpdateTheme();
     }
 

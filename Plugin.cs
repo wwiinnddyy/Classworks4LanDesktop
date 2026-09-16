@@ -2,14 +2,14 @@ using ClassworksPlugin.Services;
 using ClassworksPlugin.ViewModels.Settings;
 using ClassworksPlugin.Views.Settings;
 using ClassworksPlugin.Widgets;
-using LanMountainDesktop.PluginSdk;
+using LanMountainDesktop.AirAppSdk;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace ClassworksPlugin;
 
-[PluginEntrance]
-public sealed class Plugin : PluginBase
+[AirAppEntrance]
+public sealed class Plugin : AirAppBase
 {
     public override void Initialize(HostBuilderContext context, IServiceCollection services)
     {
@@ -22,14 +22,14 @@ public sealed class Plugin : PluginBase
 
         services.AddTransient<ClassworksSettingsViewModel>();
 
-        services.AddPluginSettingsSection<ClassworksSettingsPage>(
+        services.AddAirAppSettingsSection<ClassworksSettingsPage>(
             id: ClassworksSettingsService.SectionId,
             titleLocalizationKey: "settings.page_title",
             descriptionLocalizationKey: "plugin.description",
             iconKey: "Book",
             sortOrder: 0);
 
-        services.AddPluginDesktopComponent<ClassworksHomeworkWidget>(new PluginDesktopComponentOptions
+        services.AddAirAppComponent<ClassworksHomeworkWidget>(new AirAppComponentOptions
         {
             ComponentId = "Classworks4LanDesktop.Homework",
             DisplayName = "Classworks 作业",
@@ -40,8 +40,8 @@ public sealed class Plugin : PluginBase
             MinHeightCells = 4,
             AllowDesktopPlacement = true,
             AllowStatusBarPlacement = false,
-            ResizeMode = PluginDesktopComponentResizeMode.Free,
-            CornerRadiusPreset = PluginCornerRadiusPreset.Component
+            ResizeMode = AirAppComponentResizeMode.Free,
+            CornerRadiusPreset = AirAppCornerRadiusPreset.Component
         });
     }
 }

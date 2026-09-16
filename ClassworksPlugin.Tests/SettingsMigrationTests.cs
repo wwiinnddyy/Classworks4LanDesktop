@@ -1,5 +1,6 @@
 using ClassworksPlugin.Services;
-using LanMountainDesktop.PluginSdk;
+using LanMountainDesktop.AirAppSdk;
+using Microsoft.Extensions.Hosting;
 using Xunit;
 
 namespace ClassworksPlugin.Tests;
@@ -38,7 +39,7 @@ public sealed class SettingsMigrationTests
             Assert.Equal("legacy-token", imported.AppToken);
             Assert.Equal(ClassworksService.DefaultKvBaseUrl, imported.KvBaseUrl);
             Assert.True(imported.LegacySettingsImported);
-            Assert.Equal(SettingsScope.Plugin, hostSettings.LastScope);
+            Assert.Equal(AirAppSettingsScope.AirApp, hostSettings.LastScope);
             Assert.Equal("Classworks4LanDesktop", hostSettings.LastSubjectId);
             Assert.Equal(ClassworksSettingsService.SectionId, hostSettings.LastSectionId);
 
@@ -64,7 +65,7 @@ public sealed class SettingsMigrationTests
 
         public ClassworksSettings? SavedSettings { get; private set; }
 
-        public SettingsScope? LastScope { get; private set; }
+        public AirAppSettingsScope? LastScope { get; private set; }
 
         public string? LastSubjectId { get; private set; }
 
@@ -72,14 +73,14 @@ public sealed class SettingsMigrationTests
 
         public IReadOnlyCollection<string>? LastChangedKeys { get; private set; }
 
-        public T LoadSnapshot<T>(SettingsScope scope, string? subjectId = null, string? placementId = null) where T : new() => new();
+        public T LoadSnapshot<T>(AirAppSettingsScope scope, string? subjectId = null, string? placementId = null) where T : new() => new();
 
-        public void SaveSnapshot<T>(SettingsScope scope, T snapshot, string? subjectId = null, string? placementId = null, string? sectionId = null, IReadOnlyCollection<string>? changedKeys = null) =>
+        public void SaveSnapshot<T>(AirAppSettingsScope scope, T snapshot, string? subjectId = null, string? placementId = null, string? sectionId = null, IReadOnlyCollection<string>? changedKeys = null) =>
             throw new NotSupportedException();
 
-        public T LoadSection<T>(SettingsScope scope, string subjectId, string sectionId, string? placementId = null) where T : new() => new();
+        public T LoadSection<T>(AirAppSettingsScope scope, string subjectId, string sectionId, string? placementId = null) where T : new() => new();
 
-        public void SaveSection<T>(SettingsScope scope, string subjectId, string sectionId, T section, string? placementId = null, IReadOnlyCollection<string>? changedKeys = null)
+        public void SaveSection<T>(AirAppSettingsScope scope, string subjectId, string sectionId, T section, string? placementId = null, IReadOnlyCollection<string>? changedKeys = null)
         {
             LastScope = scope;
             LastSubjectId = subjectId;
@@ -89,38 +90,46 @@ public sealed class SettingsMigrationTests
             Changed?.Invoke(this, null!);
         }
 
-        public void DeleteSection(SettingsScope scope, string subjectId, string sectionId, string? placementId = null) =>
+        public void DeleteSection(AirAppSettingsScope scope, string subjectId, string sectionId, string? placementId = null) =>
             throw new NotSupportedException();
 
-        public T? GetValue<T>(SettingsScope scope, string key, string? subjectId = null, string? placementId = null, string? sectionId = null) =>
+        public T? GetValue<T>(AirAppSettingsScope scope, string key, string? subjectId = null, string? placementId = null, string? sectionId = null) =>
             default;
 
-        public void SetValue<T>(SettingsScope scope, string key, T value, string? subjectId = null, string? placementId = null, string? sectionId = null, IReadOnlyCollection<string>? changedKeys = null) =>
+        public void SetValue<T>(AirAppSettingsScope scope, string key, T value, string? subjectId = null, string? placementId = null, string? sectionId = null, IReadOnlyCollection<string>? changedKeys = null) =>
             throw new NotSupportedException();
 
         public IComponentSettingsAccessor GetComponentAccessor(string componentId, string? placementId) =>
             throw new NotSupportedException();
     }
 
-    private sealed class TestRuntimeContext(string dataDirectory) : IPluginRuntimeContext
+    private sealed class TestRuntimeContext(string dataDirectory) : IAirAppRuntimeContext
     {
-        public PluginManifest Manifest { get; } = new(
+        public AirAppManifest Manifest { get; } = new(
             "Classworks4LanDesktop",
             "Classworks Homework",
             "ClassworksPlugin.dll",
-            Version: "0.2.0",
-            ApiVersion: "5.0.0",
-            Runtime: new PluginRuntimeConfiguration { Mode = "in-proc" });
+            Version: "0.3.0",
+            ApiVersion: "1.0.0",
+            Runtime: new AirAppRuntimeConfiguration { Mode = "in-proc" });
 
-        public string PluginDirectory => dataDirectory;
+        public string AirAppDirectory => dataDirectory;
 
         public string DataDirectory => dataDirectory;
+
+        public string CacheDirectory => dataDirectory;
 
         public IServiceProvider Services => null!;
 
         public IReadOnlyDictionary<string, object?> Properties { get; } = new Dictionary<string, object?>();
 
-        public IPluginAppearanceContext Appearance => null!;
+        public IHostApplicationLifetime Lifetime => null!;
+
+        public IAirAppMessageBus MessageBus => null!;
+
+        public IAirAppAppearanceContext Appearance => null!;
+
+        public IAirAppLogger Logger => null!;
 
         public T? GetService<T>() => default;
 
@@ -129,5 +138,11 @@ public sealed class SettingsMigrationTests
             value = default;
             return false;
         }
+
+        public Task<IAirAppWindow> OpenWindowAsync(string windowId) =>
+            throw new NotSupportedException();
+
+        public void CloseWindow(string windowId) =>
+            throw new NotSupportedException();
     }
 }

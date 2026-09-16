@@ -34,9 +34,9 @@ function Get-ManifestFromPackage([string]$ArchivePath) {
 
     $archive = [System.IO.Compression.ZipFile]::OpenRead($ArchivePath)
     try {
-        $entry = $archive.Entries | Where-Object { $_.FullName -eq "plugin.json" } | Select-Object -First 1
+        $entry = $archive.Entries | Where-Object { $_.FullName -eq "airapp.json" } | Select-Object -First 1
         if ($null -eq $entry) {
-            throw "Plugin package '$ArchivePath' does not contain plugin.json."
+            throw "Plugin package '$ArchivePath' does not contain airapp.json."
         }
 
         $stream = $entry.Open()
@@ -55,7 +55,7 @@ function Get-ManifestFromPackage([string]$ArchivePath) {
 }
 
 $csprojPath = Join-Path $RepositoryRoot "ClassworksPlugin.csproj"
-$manifestPath = Join-Path $RepositoryRoot "plugin.json"
+$manifestPath = Join-Path $RepositoryRoot "airapp.json"
 
 $csprojContent = [System.IO.File]::ReadAllText($csprojPath)
 $csprojMatch = [System.Text.RegularExpressions.Regex]::Match(
@@ -66,12 +66,12 @@ if (-not $csprojMatch.Success) {
     throw "Missing <Version> in '$csprojPath'."
 }
 
-if ($csprojContent -notmatch '<PackageReference\s+Include="LanMountainDesktop\.PluginSdk"\s+Version="5\.0\.0"') {
-    throw "ClassworksPlugin.csproj must reference LanMountainDesktop.PluginSdk 5.0.0."
+if ($csprojContent -notmatch '<PackageReference\s+Include="LanMountainDesktop\.AirAppSdk"\s+Version="1\.0\.0"') {
+    throw "ClassworksPlugin.csproj must reference LanMountainDesktop.AirAppSdk 1.0.0."
 }
 
-if ($csprojContent -match 'LanMountainDesktop\.AirAppSdk') {
-    throw "Production Plugin SDK projects must not reference LanMountainDesktop.AirAppSdk."
+if ($csprojContent -match 'LanMountainDesktop\.PluginSdk') {
+    throw "AirApps must not reference the retired LanMountainDesktop.PluginSdk."
 }
 
 $assetsPath = Join-Path $RepositoryRoot "obj\project.assets.json"
@@ -83,7 +83,7 @@ if ($PackagePath) {
     $assets = Get-Content -LiteralPath $assetsPath -Encoding UTF8 -Raw | ConvertFrom-Json
     $resolvedLibraries = @($assets.libraries.PSObject.Properties.Name)
     $requiredLibraries = @(
-        'LanMountainDesktop.PluginSdk/5.0.0',
+        'LanMountainDesktop.AirAppSdk/1.0.0',
         'Avalonia/12.1.0',
         'FluentAvaloniaUI/3.0.1',
         'FluentIcons.Avalonia/2.1.331'
@@ -101,7 +101,7 @@ $manifestVersion = Get-VersionCore $manifest.version
 $manifestApiVersion = Get-VersionCore $manifest.apiVersion
 
 if ($csprojVersion -ne $manifestVersion) {
-    throw "Version mismatch. csproj=$csprojVersion plugin.json=$manifestVersion"
+    throw "Version mismatch. csproj=$csprojVersion airapp.json=$manifestVersion"
 }
 
 if ($manifest.id -ne "Classworks4LanDesktop") {
@@ -112,16 +112,16 @@ if ($manifest.entranceAssembly -ne "ClassworksPlugin.dll") {
     throw "Entrance assembly mismatch. Expected ClassworksPlugin.dll, actual=$($manifest.entranceAssembly)"
 }
 
-if ($manifestApiVersion -ne "5.0.0") {
-    throw "API version mismatch. Expected plugin.json apiVersion=5.0.0, actual=$manifestApiVersion"
+if ($manifestApiVersion -ne "1.0.0") {
+    throw "API version mismatch. Expected airapp.json apiVersion=1.0.0, actual=$manifestApiVersion"
 }
 
 if ($manifest.runtime.mode -ne "in-proc") {
     throw "Runtime mode mismatch. Expected in-proc, actual=$($manifest.runtime.mode)"
 }
 
-if (Test-Path (Join-Path $RepositoryRoot "airapp.json")) {
-    throw "This repository is a production Plugin SDK project. Remove the legacy airapp.json so CI cannot publish the wrong manifest."
+if (Test-Path (Join-Path $RepositoryRoot "plugin.json")) {
+    throw "Remove the retired plugin.json manifest. AirApps are described by airapp.json only."
 }
 
 $expectedAssetName = "$($manifest.id).$csprojVersion.laapp"
@@ -138,7 +138,7 @@ if ($PackagePath) {
         $packageManifest.version -ne $manifest.version -or
         $packageManifest.apiVersion -ne $manifest.apiVersion -or
         $packageManifest.runtime.mode -ne $manifest.runtime.mode) {
-        throw "Package manifest does not match repository plugin.json."
+        throw "Package manifest does not match repository airapp.json."
     }
 
     $archive = [System.IO.Compression.ZipFile]::OpenRead($resolvedPackagePath)
@@ -151,7 +151,7 @@ if ($PackagePath) {
             }
             if ($leafName -match '\.pdb$' -or
                 $entryName -match '(^|/)(bin|obj|node_modules)/' -or
-                $leafName -eq 'LanMountainDesktop.PluginSdk.dll' -or
+                $leafName -eq 'LanMountainDesktop.AirAppSdk.dll' -or
                 $leafName -like 'Avalonia*.dll' -or
                 $leafName -like 'FluentAvalonia*.dll' -or
                 $leafName -like 'FluentIcons*.dll') {
@@ -169,7 +169,7 @@ if ($MarketManifestPath) {
     if ($market.schemaVersion -ne '2.0.0' -or
         $market.manifest.id -ne $manifest.id -or
         $market.manifest.version -ne $manifest.version -or
-        $market.manifest.apiVersion -ne '5.0.0' -or
+        $market.manifest.apiVersion -ne '1.0.0' -or
         $market.compatibility.minHostVersion -ne '0.8.6' -or
         $market.publication.releaseTag -ne "v$csprojVersion" -or
         $market.publication.releaseAssetName -ne $expectedAssetName) {

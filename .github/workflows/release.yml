@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  PROJECT: ClassworksPlugin.csproj
+  TEST_PROJECT: ClassworksPlugin.Tests/ClassworksPlugin.Tests.csproj
+
+jobs:
+  release:
+    name: Build, test, package and publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: 'preview'
+
+      - name: Add LanMountain package source
+        run: >
+          dotnet nuget add source https://nuget.pkg.github.com/wwiinnddyy/index.json
+          --name lanmountain
+          --username ${{ github.actor }}
+          --password ${{ secrets.LANMOUNTAIN_PACKAGES_TOKEN }}
+          --store-password-in-clear-text
+
+      - name: Restore
+        run: |
+          dotnet restore ${{ env.PROJECT }}
+          dotnet restore ${{ env.TEST_PROJECT }}
+
+      - name: Test
+        run: dotnet test ${{ env.TEST_PROJECT }} -c Debug
+
+      - name: Build and package
+        run: dotnet build ${{ env.PROJECT }} -c Release --no-restore
+
+      - name: Verify manifest consistency
+        shell: pwsh
+        run: ./scripts/Test-PluginConsistency.ps1 -RepositoryRoot (Resolve-Path ".").Path
+
+      - name: Generate market manifest
+        shell: pwsh
+        run: ./scripts/New-MarketManifest.ps1
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.laapp
+            artifacts/market-manifest.json
+          generate_release_notes: true

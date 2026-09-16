@@ -36,9 +36,9 @@ function Get-ArrayValue($Object, [string]$Name) {
 function Get-PackageManifest([string]$ArchivePath) {
     $archive = [System.IO.Compression.ZipFile]::OpenRead($ArchivePath)
     try {
-        $entry = $archive.Entries | Where-Object { $_.FullName -eq "plugin.json" } | Select-Object -First 1
+        $entry = $archive.Entries | Where-Object { $_.FullName -eq "airapp.json" } | Select-Object -First 1
         if ($null -eq $entry) {
-            throw "Plugin package '$ArchivePath' does not contain plugin.json."
+            throw "Plugin package '$ArchivePath' does not contain airapp.json."
         }
 
         $stream = $entry.Open()
@@ -75,14 +75,14 @@ $resolvedPackagePath = (Resolve-Path $PackagePath -ErrorAction Stop).Path
 $manifest = Get-PackageManifest -ArchivePath $resolvedPackagePath
 
 Assert-ThreePartVersion -Value $Version -FieldName "Version"
-Assert-ThreePartVersion -Value ([string]$manifest.version) -FieldName "plugin.json version"
-Assert-ThreePartVersion -Value ([string]$manifest.apiVersion) -FieldName "plugin.json apiVersion"
+Assert-ThreePartVersion -Value ([string]$manifest.version) -FieldName "airapp.json version"
+Assert-ThreePartVersion -Value ([string]$manifest.apiVersion) -FieldName "airapp.json apiVersion"
 
 if ($manifest.version -ne $Version) {
     throw "Requested version '$Version' does not match package manifest version '$($manifest.version)'."
 }
 
-if ($manifest.apiVersion -ne "5.0.0") {
+if ($manifest.apiVersion -ne "1.0.0") {
     throw "Production market releases must target PluginSdk API 5.0.0, actual '$($manifest.apiVersion)'."
 }
 

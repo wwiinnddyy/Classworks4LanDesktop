@@ -6,17 +6,17 @@
     <Nullable>enable</Nullable>
     <RootNamespace>ClassworksPlugin</RootNamespace>
     <AssemblyName>ClassworksPlugin</AssemblyName>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <OutputPath>bin\$(Configuration)\$(TargetFramework)\content\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <LanMountainPluginBuildOutputDirectory>$(OutputPath)</LanMountainPluginBuildOutputDirectory>
-    <LanMountainPluginPackageVersion>$(Version)</LanMountainPluginPackageVersion>
-    <LanMountainPluginPackageOutputDirectory>$(MSBuildThisFileDirectory)</LanMountainPluginPackageOutputDirectory>
-    <LanMountainPluginPackageFileName>Classworks4LanDesktop.$(LanMountainPluginPackageVersion)$(LanMountainPluginPackageExtension)</LanMountainPluginPackageFileName>
-    <LanMountainPluginPackagePath>$(LanMountainPluginPackageOutputDirectory)$(LanMountainPluginPackageFileName)</LanMountainPluginPackagePath>
+    <LanMountainAirAppBuildOutputDirectory>$(OutputPath)</LanMountainAirAppBuildOutputDirectory>
+    <LanMountainAirAppPackageVersion>$(Version)</LanMountainAirAppPackageVersion>
+    <LanMountainAirAppPackageOutputDirectory>$(MSBuildThisFileDirectory)</LanMountainAirAppPackageOutputDirectory>
+    <LanMountainAirAppPackageFileName>Classworks4LanDesktop.$(LanMountainAirAppPackageVersion)$(LanMountainAirAppPackageExtension)</LanMountainAirAppPackageFileName>
+    <LanMountainAirAppPackagePath>$(LanMountainAirAppPackageOutputDirectory)$(LanMountainAirAppPackageFileName)</LanMountainAirAppPackagePath>
     <RestorePackagesPath>$(MSBuildThisFileDirectory).nuget\packages</RestorePackagesPath>
   </PropertyGroup>
 
@@ -26,9 +26,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LanMountainDesktop.PluginSdk" Version="5.0.0" ExcludeAssets="runtime;native" PrivateAssets="all" />
+    <PackageReference Include="LanMountainDesktop.AirAppSdk" Version="1.0.0" ExcludeAssets="runtime;native" PrivateAssets="all" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <None Include="plugin.json" CopyToOutputDirectory="PreserveNewest" />
+    
     <None Include="Localization\*.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Remove="ClassworksPlugin.Tests\**\*.cs" />
   </ItemGroup>

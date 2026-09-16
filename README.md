@@ -9,11 +9,11 @@ Classworks 官方数据协议的阑山桌面作业组件。插件读取并更新
 - Plugin SDK / API：`5.0.0`
 - 最低宿主版本：`0.8.6`（首个包含 Plugin SDK 5 的宿主版本）
 - UI 基线：Avalonia `12.1.0`（由 Plugin SDK 5 提供）
-- 生产清单：`plugin.json`
+- 生产清单：`airapp.json`
 - 运行模式：`in-proc`
 - 发布资产：`Classworks4LanDesktop.0.2.0.laapp`
 
-这是传统 LanMountainDesktop 插件，不是第三方 AirApp 原型。生产安装和市场发布只使用 `plugin.json + .laapp`。
+这是传统 LanMountainDesktop 插件，不是第三方 AirApp 原型。生产安装和市场发布只使用 `airapp.json + .laapp`。
 
 ## 与 Classworks 的集成
 
@@ -40,7 +40,7 @@ dotnet build ./ClassworksPlugin.csproj -c Release --no-restore
 ./scripts/Test-PluginConsistency.ps1 -PackagePath ./Classworks4LanDesktop.0.2.0.laapp
 ```
 
-`LanMountainDesktop.PluginSdk` 的构建目标会在仓库根目录生成 `.laapp`。
+`LanMountainDesktop.AirAppSdk` 的构建目标会在仓库根目录生成 `.laapp`。
 
 ## 发布到市场
 
@@ -51,7 +51,7 @@ GitHub Release 应包含：
 - `sha256.txt`
 - `md5.txt`
 
-Release tag 必须是 `v0.2.0`，包内 `plugin.json` 的 `id/version/apiVersion`、资产名和 tag 必须一致。CI 和手动发布工作流会执行这些校验。
+Release tag 必须是 `v0.2.0`，包内 `airapp.json` 的 `id/version/apiVersion`、资产名和 tag 必须一致。CI 和手动发布工作流会执行这些校验。
 
 ## 安全说明
 

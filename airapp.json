@@ -3,11 +3,16 @@
   "name": "Classworks 作业组件",
   "description": "在阑山桌面上显示并同步 Classworks 班级作业板数据。",
   "author": "Classworks4LanDesktop",
-  "version": "0.2.0",
-  "apiVersion": "5.0.0",
+  "version": "0.3.0",
+  "apiVersion": "1.0.0",
   "entranceAssembly": "ClassworksPlugin.dll",
   "sharedContracts": [],
   "runtime": {
     "mode": "in-proc"
-  }
+  },
+  "components": [
+    { "id": "Classworks4LanDesktop.Homework", "name": "Classworks 作业", "defaultWidth": 3, "defaultHeight": 4 }
+  ],
+  "windows": [],
+  "permissions": []
 }

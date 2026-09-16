@@ -1,9 +1,9 @@
 using ClassworksPlugin.ViewModels.Settings;
-using LanMountainDesktop.PluginSdk;
+using LanMountainDesktop.AirAppSdk;
 
 namespace ClassworksPlugin.Views.Settings;
 
-public partial class ClassworksSettingsPage : SettingsPageBase
+public partial class ClassworksSettingsPage : AirAppSettingsPageBase
 {
     public ClassworksSettingsPage()
     {

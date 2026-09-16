@@ -1,6 +1,6 @@
 using ClassworksPlugin.Services;
 using ClassworksPlugin.Views.Settings;
-using LanMountainDesktop.PluginSdk;
+using LanMountainDesktop.AirAppSdk;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
@@ -10,7 +10,7 @@ namespace ClassworksPlugin.Tests;
 public sealed class PluginRegistrationTests
 {
     [Fact]
-    public void InitializeRegistersApi5SettingsAndHomeworkComponent()
+    public void InitializeRegistersSettingsAndHomeworkComponent()
     {
         var services = new ServiceCollection();
         var plugin = new Plugin();
@@ -21,19 +21,19 @@ public sealed class PluginRegistrationTests
 
         var settingsRegistration = Assert.Single(
             services
-                .Where(descriptor => descriptor.ServiceType == typeof(PluginSettingsSectionRegistration))
-                .Select(descriptor => Assert.IsType<PluginSettingsSectionRegistration>(descriptor.ImplementationInstance)));
+                .Where(descriptor => descriptor.ServiceType == typeof(AirAppSettingsSectionRegistration))
+                .Select(descriptor => Assert.IsType<AirAppSettingsSectionRegistration>(descriptor.ImplementationInstance)));
         Assert.Equal(ClassworksSettingsService.SectionId, settingsRegistration.Id);
         Assert.Equal(typeof(ClassworksSettingsPage), settingsRegistration.CustomViewType);
 
         var componentRegistration = Assert.Single(
             services
-                .Where(descriptor => descriptor.ServiceType == typeof(PluginDesktopComponentRegistration))
-                .Select(descriptor => Assert.IsType<PluginDesktopComponentRegistration>(descriptor.ImplementationInstance)));
+                .Where(descriptor => descriptor.ServiceType == typeof(AirAppComponentRegistration))
+                .Select(descriptor => Assert.IsType<AirAppComponentRegistration>(descriptor.ImplementationInstance)));
         Assert.Equal("Classworks4LanDesktop.Homework", componentRegistration.ComponentId);
         Assert.True(componentRegistration.AllowDesktopPlacement);
         Assert.False(componentRegistration.AllowStatusBarPlacement);
-        Assert.Equal(PluginDesktopComponentResizeMode.Free, componentRegistration.ResizeMode);
-        Assert.Equal(PluginCornerRadiusPreset.Component, componentRegistration.CornerRadiusPreset);
+        Assert.Equal(AirAppComponentResizeMode.Free, componentRegistration.ResizeMode);
+        Assert.Equal(AirAppCornerRadiusPreset.Component, componentRegistration.CornerRadiusPreset);
     }
 }
