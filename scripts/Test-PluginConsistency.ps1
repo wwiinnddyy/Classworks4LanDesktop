@@ -58,6 +58,9 @@ $csprojPath = Join-Path $RepositoryRoot "ClassworksPlugin.csproj"
 $manifestPath = Join-Path $RepositoryRoot "airapp.json"
 
 $csprojContent = [System.IO.File]::ReadAllText($csprojPath)
+$manifest = Get-Content $manifestPath -Encoding UTF8 -Raw | ConvertFrom-Json
+$manifestVersion = Get-VersionCore $manifest.version
+$manifestApiVersion = Get-VersionCore $manifest.apiVersion
 $csprojMatch = [System.Text.RegularExpressions.Regex]::Match(
     $csprojContent,
     "<Version>(?<version>.*?)</Version>",
@@ -66,8 +69,8 @@ if (-not $csprojMatch.Success) {
     throw "Missing <Version> in '$csprojPath'."
 }
 
-if ($csprojContent -notmatch '<PackageReference\s+Include="LanMountainDesktop\.AirAppSdk"\s+Version="1\.0\.0"') {
-    throw "ClassworksPlugin.csproj must reference LanMountainDesktop.AirAppSdk 1.0.0."
+if ($csprojContent -notmatch '<PackageReference\s+Include="LanMountainDesktop\.AirAppSdk"') {
+    throw "ClassworksPlugin.csproj must reference LanMountainDesktop.AirAppSdk."
 }
 
 if ($csprojContent -match 'LanMountainDesktop\.PluginSdk') {
@@ -83,7 +86,7 @@ if ($PackagePath) {
     $assets = Get-Content -LiteralPath $assetsPath -Encoding UTF8 -Raw | ConvertFrom-Json
     $resolvedLibraries = @($assets.libraries.PSObject.Properties.Name)
     $requiredLibraries = @(
-        'LanMountainDesktop.AirAppSdk/1.0.0',
+        "LanMountainDesktop.AirAppSdk/$manifestApiVersion",
         'Avalonia/12.1.0',
         'FluentAvaloniaUI/3.0.1',
         'FluentIcons.Avalonia/2.1.331'
@@ -96,9 +99,6 @@ if ($PackagePath) {
 }
 
 $csprojVersion = Get-VersionCore $csprojMatch.Groups["version"].Value
-$manifest = Get-Content $manifestPath -Encoding UTF8 -Raw | ConvertFrom-Json
-$manifestVersion = Get-VersionCore $manifest.version
-$manifestApiVersion = Get-VersionCore $manifest.apiVersion
 
 if ($csprojVersion -ne $manifestVersion) {
     throw "Version mismatch. csproj=$csprojVersion airapp.json=$manifestVersion"
@@ -112,8 +112,17 @@ if ($manifest.entranceAssembly -ne "ClassworksPlugin.dll") {
     throw "Entrance assembly mismatch. Expected ClassworksPlugin.dll, actual=$($manifest.entranceAssembly)"
 }
 
-if ($manifestApiVersion -ne "1.0.0") {
-    throw "API version mismatch. Expected airapp.json apiVersion=1.0.0, actual=$manifestApiVersion"
+$sdkReference = [System.Text.RegularExpressions.Regex]::Match(
+    $csprojContent,
+    '<PackageReference\s+Include="LanMountainDesktop\.AirAppSdk"\s+Version="(?<v>[^"]+)"')
+if (-not $sdkReference.Success) {
+    throw "csproj must reference LanMountainDesktop.AirAppSdk with an explicit Version."
+}
+
+# airapp.json 的 apiVersion 是"这个轻应用绑哪条 SDK 线"的唯一声明，csproj 必须引用同一条。
+# 钉字面量的写法每次抬版本线都会变成假红灯（1.0.1 那次三家 CI 全撞在这上面）。
+if ((Get-VersionCore $sdkReference.Groups["v"].Value) -ne $manifestApiVersion) {
+    throw "SDK line mismatch. csproj AirAppSdk=$($sdkReference.Groups['v'].Value) airapp.json apiVersion=$($manifest.apiVersion)"
 }
 
 if ($manifest.runtime.mode -ne "in-proc") {
@@ -169,7 +178,7 @@ if ($MarketManifestPath) {
     if ($market.schemaVersion -ne '2.0.0' -or
         $market.manifest.id -ne $manifest.id -or
         $market.manifest.version -ne $manifest.version -or
-        $market.manifest.apiVersion -ne '1.0.0' -or
+        $market.manifest.apiVersion -ne $manifest.apiVersion -or
         $market.compatibility.minHostVersion -ne '0.8.6' -or
         $market.publication.releaseTag -ne "v$csprojVersion" -or
         $market.publication.releaseAssetName -ne $expectedAssetName) {

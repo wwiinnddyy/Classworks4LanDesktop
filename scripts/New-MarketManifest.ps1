@@ -82,8 +82,11 @@ if ($manifest.version -ne $Version) {
     throw "Requested version '$Version' does not match package manifest version '$($manifest.version)'."
 }
 
-if ($manifest.apiVersion -ne "1.0.0") {
-    throw "Production market releases must target PluginSdk API 5.0.0, actual '$($manifest.apiVersion)'."
+# apiVersion 不再钉死：它跟着 SDK 版本线走（钉死 "1.0.0" 的写法在抬到 1.0.1 时把发布门自己绊倒了）。
+# 这里要守的不变量是"包里的清单 == 仓库自己声明的那条线"。
+$repoManifest = Get-Content (Join-Path (Split-Path $PSScriptRoot -Parent) "airapp.json") -Encoding UTF8 -Raw | ConvertFrom-Json
+if ($manifest.apiVersion -ne $repoManifest.apiVersion) {
+    throw "Packaged apiVersion '$($manifest.apiVersion)' does not match airapp.json '$($repoManifest.apiVersion)'."
 }
 
 if ($ReleaseTag -ne "v$Version") {
@@ -118,7 +121,7 @@ $workspaceLocalUrl = "workspace://$($repo.Name)/$assetName"
 $minHostVersion = [string]$template.minHostVersion
 Assert-ThreePartVersion -Value $minHostVersion -FieldName "minHostVersion"
 if ([Version]$minHostVersion -lt [Version]"0.8.6") {
-    throw "PluginSdk 5 releases require minHostVersion 0.8.6 or newer."
+    throw "Market releases require minHostVersion 0.8.6 or newer."
 }
 
 $entry = [pscustomobject][ordered]@{
