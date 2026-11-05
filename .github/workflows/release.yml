@@ -50,6 +50,7 @@ jobs:
         run: ./scripts/Test-PluginConsistency.ps1 -RepositoryRoot (Resolve-Path ".").Path
 
       - name: Generate market manifest
+        id: manifest
         shell: pwsh
         run: |
           $manifest = Get-Content ./airapp.json -Encoding UTF8 -Raw | ConvertFrom-Json
@@ -60,10 +61,13 @@ jobs:
             -Version $manifest.version `
             -ReleaseTag "v$($manifest.version)" `
             -OutputPath ./artifacts/market-manifest.json
+          # workflow_dispatch 触发时 GITHUB_REF 是分支不是 tag，action-gh-release 必须显式给 tag_name
+          "tag=v$($manifest.version)" >> $Env:GITHUB_OUTPUT
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.manifest.outputs.tag }}
           files: |
             *.laapp
             artifacts/market-manifest.json
