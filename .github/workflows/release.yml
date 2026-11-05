@@ -51,7 +51,15 @@ jobs:
 
       - name: Generate market manifest
         shell: pwsh
-        run: ./scripts/New-MarketManifest.ps1
+        run: |
+          $manifest = Get-Content ./airapp.json -Encoding UTF8 -Raw | ConvertFrom-Json
+          $assetName = "$($manifest.id).$($manifest.version).laapp"
+          ./scripts/New-MarketManifest.ps1 `
+            -TemplatePath ./airappmarket-entry.template.json `
+            -PackagePath "./$assetName" `
+            -Version $manifest.version `
+            -ReleaseTag "v$($manifest.version)" `
+            -OutputPath ./artifacts/market-manifest.json
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
